@@ -1,101 +1,176 @@
-import Image from "next/image";
+"use client"
+
+import { useState, useEffect } from 'react';
+import { 
+  Command,
+  CommandList,
+  CommandInput,
+  CommandEmpty,
+  CommandItem,
+  CommandShortcut
+} from '@/components/ui/command';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
+import { Trash2, PenLine  } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from "sonner"
+
+class Task {
+  constructor(
+    public id: Date = new Date(),
+    public title: string = "",
+    public content: string = "",
+    public done: boolean = false,
+  ) {}
+}
+
+type Filter = 'all' | 'done' | 'undone'
+
+
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [tempTask, setTempTask] = useState<Task>(new Task());
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [filter, setFilter] = useState<Filter>('all');
+  
+  useEffect(() => {
+    const tasks = localStorage.getItem('tasks');
+    if (tasks) {
+      setTasks(JSON.parse(tasks));
+    } else {
+      setTasks([
+        { id: new Date(), title: '吃饭', content: '去吃饭', done: false },
+        { id: new Date(), title: '睡觉', content: '去吃饭', done: false },
+        { id: new Date(), title: '编程', content: '去吃饭', done: false },
+      ]);
+    }
+  }, []);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  const switchTask = (id: Date) => {
+    const newTasks =tasks.map(task => task.id === id? {...task, done: !task.done} : task)
+    setTasks(newTasks);
+    localStorage.setItem('tasks', JSON.stringify(newTasks));
+  }
+
+  const addTask = (formData: FormData) => {
+    setTasks([...tasks, {
+      id: new Date(),
+      title: formData.get('title') as string,
+      content: formData.get('content') as string,
+      done: false
+    }]);
+    toast.success('添加成功');
+  }
+
+  const deleteTask = (id: Date) => {
+    const newTasks = tasks.filter(task => task.id !== id);
+    setTasks(newTasks);
+    localStorage.setItem('tasks', JSON.stringify(newTasks));
+  }
+
+  const editTask = () => {
+    setTasks(tasks.map(task => task.id === tempTask.id? {...task, ...tempTask} : task))
+  }
+
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center">
+      <div>
+        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+          TODO LIST ({tasks.filter(task => !task.done).length}/{tasks.length})
+        </h1>
+      </div>
+
+      <ToggleGroup type='single' size="lg" className='grid grid-cols-3 gap-0'>
+        <ToggleGroupItem value="all" onClick={() => setFilter('all')}>全部</ToggleGroupItem>
+        <ToggleGroupItem value="done" onClick={() => setFilter('done')} >完成</ToggleGroupItem>
+        <ToggleGroupItem value="undone" onClick={() => setFilter('undone')}>未完成</ToggleGroupItem>
+      </ToggleGroup>
+
+      <div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="ghost"> + 添加任务</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Add Todo</DialogTitle>
+            <form action={addTask}>
+              <Label>Title</Label>
+              <Input name="title" />
+              <Label>Content</Label>
+              <pre>
+                <Textarea name="content" />
+              </pre>
+              <div>
+                <Button type="submit" variant="ghost">添加</Button>
+                <DialogClose>关闭</DialogClose>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <div>
+        <Command>
+          <CommandInput></CommandInput>
+          <CommandList>
+            <CommandEmpty>空</CommandEmpty>
+            {tasks.filter(task => filter === 'all' || (filter === 'done' && task.done) || (filter === 'undone' && !task.done)).map((task, index) => (
+              <CommandItem key={index} onSelect={() => null}>
+                <Checkbox className="mr-2" checked={task.done} onCheckedChange={() => {switchTask(task.id)}} />  
+                <Label className={task.done? "line-through": ""}>
+                  {task.title}
+                </Label>
+                <CommandShortcut className="h-full flex flex-row items-center gap-0">
+                  <Dialog >
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" onClick={() => setTempTask(task)}>
+                        <PenLine className="mr-2 h-6 w-6" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Todo</DialogTitle>
+                      </DialogHeader>
+                      
+                      <form action={editTask}>
+                        <Label>Title</Label>
+                          <Input name="title" value={tempTask.title} onChange={(e) => setTempTask({...tempTask, title: e.target.value})} />
+                        <Label>Content</Label>
+                        <Textarea name="content" value={tempTask.content} onChange={(e) => setTempTask({...tempTask, content: e.target.value})} />
+                        
+                        <DialogFooter>
+                          <Button type="submit" variant="ghost">保存</Button>
+                        </DialogFooter>
+                        <div>
+                          <Button type="submit" variant="ghost">保存</Button>
+                          <DialogClose>关闭</DialogClose>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                  <Button variant="ghost" onClick={() => deleteTask(task.id)}>
+                    <Trash2 className="h-6 w-6" />
+                  </Button>
+                </CommandShortcut>
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </div>
     </div>
   );
 }
