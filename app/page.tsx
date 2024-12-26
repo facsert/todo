@@ -20,6 +20,12 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+} from "@/components/ui/pagination";
 import { Trash2, PenLine  } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -40,11 +46,15 @@ class Task {
 type Filter = 'all' | 'done' | 'undone'
 
 export default function Home() {
+  const maxPageNum = 5
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
   
+  const [onAddTaskId, setOnAddTaskId] = useState<Date|null>(null);
   const [editTask, setEditTask] = useState<Task>(new Task());
   const [open, setOpen] = useState(false)
+
+  const [pageNum, setPageNum] = useState(1)
   
   useEffect(() => {
     const tasks = localStorage.getItem('tasks');
@@ -60,24 +70,43 @@ export default function Home() {
   }
 
   const addTask = (formData: FormData) => {
-    setTasks([...tasks, {
+    const newTask = {
       id: new Date(),
       title: formData.get('title') as string,
       content: formData.get('content') as string,
       done: false
-    }]);
-    toast.success('添加成功');
+    }
+    if (onAddTaskId === null) {
+      setTasks([...tasks, newTask]);
+      toast.success('添加成功');
+    } else {
+      setTasks(tasks.map(task => task.id === onAddTaskId? newTask: task));
+      toast.success('修改成功');
+    }
+    setOnAddTaskId(newTask.id);
   }
 
   const deleteTask = (id: Date) => {
     const newTasks = tasks.filter(task => task.id !== id);
     setTasks(newTasks);
     localStorage.setItem('tasks', JSON.stringify(newTasks));
+    if (selectTasks(newTasks).length === 0) {
+      setPageNum(pageNum === 1? 1: pageNum - 1)
+    }
   }
 
   const onSave = () => {
     setTasks(tasks.map(task => task.id === editTask.id? {...task, ...editTask} : task))
     toast.success('修改成功');
+  }
+  
+  const selectTaskLength = () => {
+    const num = tasks.filter(task => filter === 'all' || (filter === 'done' && task.done) || (filter === 'undone' && !task.done)).length
+    return Math.ceil(num / maxPageNum)
+  }
+  
+  const selectTasks = (taskList: Task[] = tasks) => {
+    return taskList.filter(task => filter === 'all' || (filter === 'done' && task.done) || (filter === 'undone' && !task.done)).slice((pageNum - 1) * maxPageNum, pageNum * maxPageNum)
   }
 
   return (
@@ -113,7 +142,7 @@ export default function Home() {
             <div className='grid grid-cols-2 gap-4'>
               <Button type="submit" variant="outline">添加</Button>
               <DialogClose asChild>
-                <Button type="button" variant="outline">关闭</Button>
+                <Button type="button" variant="outline" onClick={() => setOnAddTaskId(null)}>关闭</Button>
               </DialogClose>
             </div>
           </form>
@@ -155,14 +184,14 @@ export default function Home() {
           </form>
         </DialogContent>
       </Dialog>
-
-      <Command className='flex flex-col gap-2'>
+      
+      <Command className='flex flex-col border'>
         <CommandInput placeholder="搜索任务" />
         <CommandList>
           <CommandEmpty>未找到匹配任务</CommandEmpty>
-          {tasks.filter(task => filter === 'all' || (filter === 'done' && task.done) || (filter === 'undone' && !task.done)).map((task, index) => (
-            <CommandItem key={index} className='mt-0'>
-              <Checkbox className="mr-2" checked={task.done} onCheckedChange={() => {switchTask(task.id)}} />  
+          {selectTasks().map((task, index) => (
+            <CommandItem key={index}>
+              <Checkbox className="ml-2 mr-2" checked={task.done} onCheckedChange={() => {switchTask(task.id)}} />  
               <Label className={task.done? "line-through": ""}>
                 {task.title}
               </Label>
@@ -178,7 +207,18 @@ export default function Home() {
           ))}
         </CommandList>
       </Command>
-
+      
+      <Pagination className='mt-4'>
+        <PaginationContent>
+          {Array.from({ length: selectTaskLength() },  (_, i) => i + 1).map((_, index) => (
+            <PaginationItem key={index}>
+              <PaginationLink href='#' className='border rounded-md' onClick={() => setPageNum(index + 1)}>
+                {index + 1}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 }
