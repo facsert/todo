@@ -110,11 +110,14 @@ export default function Home() {
   }
 
   return (
-    <div className="w-1/2 flex-col justify-center">
+    <div className="w-1/2 flex-col justify-center min-w-[50vw]">
 
-      <div className='grid place-items-center mb-8'>
+      <div className='grid place-items-center mb-4'>
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-          TODO LIST ({tasks.filter(task => !task.done).length}/{tasks.length})
+          TODO LIST
+        </h1>
+        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+          {tasks.filter(task => !task.done).length}/{tasks.length}
         </h1>
       </div>
 
